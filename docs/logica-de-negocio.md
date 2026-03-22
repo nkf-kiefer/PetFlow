@@ -60,7 +60,7 @@ Este documento descreve as regras de negócio aplicadas na API, o comportamento 
    - Correção já aplicada: zerar quantidade antes de gerar `StockMovement` inicial.
 
 ### Pontos de atenção (não bloqueantes)
-1. Campo `Employee.password` é armazenado como texto no modelo de domínio (não é `django.contrib.auth.User`).
+1. Campo `Employee.password` pertence ao modelo de domínio (não é `django.contrib.auth.User`), porém o hashing é aplicado no `EmployeeSerializer` em `create()` e `update()`.
 2. Não há escopo multiclínica por usuário na camada de consulta (querysets retornam todos os registros).
 3. Não há paginação/filtro padrão configurados no DRF.
 

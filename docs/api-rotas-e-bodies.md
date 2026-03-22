@@ -126,7 +126,7 @@ Content-Type: application/json
   "clinic": "<clinic_uuid>",
   "name": "João Santos",
   "email": "joao@petfeliz.com",
-  "password": "senha123",
+  "password": "Joao@Vet2026",
   "role": "veterinario",
   "phone": "(11) 88888-8888",
   "admission_date": "2025-01-15",

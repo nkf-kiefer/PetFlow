@@ -12,7 +12,6 @@ API REST para gestão de clínica veterinária (cadastros, agenda, estoque e fin
 - [Deploy](#deploy)
 - [Qualidade e testes](#qualidade-e-testes)
 - [Estrutura do projeto](#estrutura-do-projeto)
-- [Próximas melhorias](#próximas-melhorias)
 
 ## Visão geral
 - Projeto backend em Django + DRF.
@@ -85,7 +84,7 @@ Content-Type: application/json
 	- `DEBUG=False`
 	- `SECRET_KEY` forte e secreta
 	- `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS` e `CORS_ALLOWED_ORIGINS` corretos
-	- PostgreSQL configurado
+	- Banco configurado conforme ambiente (SQLite para cenários simples; PostgreSQL recomendado para produção)
 
 ## Documentação funcional
 
@@ -117,7 +116,7 @@ O script [test_crud.py](test_crud.py) valida:
 ```text
 PetFlow/
 ├─ api/                # models, serializers, views, signals
-├─ docs/               # documentação funcional e deploy
+├─ docs/               # documentação funcional
 ├─ petflowapi/         # settings e urls do projeto Django
 ├─ frontend/           # interface web auxiliar
 ├─ test_crud.py        # suíte de teste CRUD e regras de negócio
@@ -125,6 +124,11 @@ PetFlow/
 ├─ requirements.txt    # dependências do projeto
 └─ README.md
 ```
+
+```
+
+
+
 
 
 
