@@ -11,9 +11,11 @@ venv/
 # Local env/config
 .env
 .env.*
+!.env.example
 
 # Django
 db.sqlite3
+*.sqlite3
 staticfiles/
 media/
 
@@ -22,3 +24,20 @@ media/
 .mypy_cache/
 .vscode/
 .idea/
+
+# OS / logs / secrets
+*.log
+Thumbs.db
+.DS_Store
+*.pem
+*.key
+*.crt
+*.p12
+id_rsa
+id_ed25519
+
+# PythonAnywhere artifacts
+*.pyc
+*.pid
+*.sock
+*.bak

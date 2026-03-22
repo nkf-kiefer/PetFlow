@@ -94,7 +94,6 @@ Content-Type: application/json
 
 ## Deploy
 
-- Guia de deploy e checklist (frontend + API no mesmo serviço): [docs/deploy.md](docs/deploy.md)
 - Opção mais simples e gratuita: PythonAnywhere
 - Arquivo pronto para Render: [render.yaml](render.yaml)
 - Sugestões de hospedagem: Render, Railway ou Fly.io
