@@ -127,8 +127,5 @@ PetFlow/
 └─ README.md
 ```
 
-## Próximas melhorias
 
-- Paginação e filtros padrão no DRF.
-- Escopo multiclínica por usuário autenticado.
 

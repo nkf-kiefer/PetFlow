@@ -382,7 +382,18 @@ class Command(BaseCommand):
             )
 
         # 10 transações financeiras (uma por agendamento)
-        ft_status = ["pago", "pendente", "pago", "pago", "pendente", "pago", "cancelado", "pago", "pendente", "pago"]
+        ft_status = [
+            "pago",
+            "pendente",
+            "pago",
+            "pago",
+            "pendente",
+            "pago",
+            "cancelado",
+            "pago",
+            "pendente",
+            "pago",
+        ]
         for idx in range(10):
             scheduling = schedulings[idx]
             status = ft_status[idx]
