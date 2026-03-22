@@ -1,6 +1,8 @@
-# Rotas e Bodies por Operação — PetFlow API
+# Rotas da API (com exemplos de payload)
 
 Base URL local: `http://localhost:8000/api`
+
+> Os exemplos abaixo são um ponto de partida. Pode copiar e adaptar os valores para o seu cenário.
 
 ## Autenticação
 
@@ -33,7 +35,7 @@ Content-Type: application/json
 
 ---
 
-## Padrão CRUD (todos os recursos)
+## Padrão CRUD (vale para todos os recursos)
 - `GET /<resource>/`
 - `POST /<resource>/`
 - `GET /<resource>/<id>/`
@@ -45,7 +47,7 @@ Content-Type: application/json
 
 ## 1) Clinics (`/clinics/`)
 
-### POST body
+### Exemplo de POST
 ```json
 {
   "name": "Clínica Pet Feliz",
@@ -64,7 +66,7 @@ Content-Type: application/json
 }
 ```
 
-### PATCH body (exemplo)
+### Exemplo de PATCH
 ```json
 {
   "phone": "(11) 98888-7777"
@@ -73,7 +75,7 @@ Content-Type: application/json
 
 ## 2) Tutors (`/tutors/`)
 
-### POST body
+### Exemplo de POST
 ```json
 {
   "clinic": "<clinic_uuid>",
@@ -85,7 +87,7 @@ Content-Type: application/json
 }
 ```
 
-### PATCH body (exemplo)
+### Exemplo de PATCH
 ```json
 {
   "email": "maria.novo@email.com"
@@ -94,7 +96,7 @@ Content-Type: application/json
 
 ## 3) Pets (`/pets/`)
 
-### POST body
+### Exemplo de POST
 ```json
 {
   "tutor": "<tutor_uuid>",
@@ -111,7 +113,7 @@ Content-Type: application/json
 }
 ```
 
-### PATCH body (exemplo)
+### Exemplo de PATCH
 ```json
 {
   "weight": 26.2
@@ -120,7 +122,7 @@ Content-Type: application/json
 
 ## 4) Employees (`/employees/`)
 
-### POST body
+### Exemplo de POST
 ```json
 {
   "clinic": "<clinic_uuid>",
@@ -134,7 +136,7 @@ Content-Type: application/json
 }
 ```
 
-### PATCH body (exemplo)
+### Exemplo de PATCH
 ```json
 {
   "role": "gerente"
@@ -143,7 +145,7 @@ Content-Type: application/json
 
 ## 5) Services (`/services/`)
 
-### POST body
+### Exemplo de POST
 ```json
 {
   "name": "Banho e Tosa",
@@ -156,7 +158,7 @@ Content-Type: application/json
 }
 ```
 
-### PATCH body (exemplo)
+### Exemplo de PATCH
 ```json
 {
   "price": 95.0
@@ -165,7 +167,7 @@ Content-Type: application/json
 
 ## 6) Products (`/products/`)
 
-### POST body
+### Exemplo de POST
 ```json
 {
   "clinic": "<clinic_uuid>",
@@ -181,7 +183,7 @@ Content-Type: application/json
 }
 ```
 
-### PATCH body (exemplo)
+### Exemplo de PATCH
 ```json
 {
   "price": 29.9
@@ -190,7 +192,7 @@ Content-Type: application/json
 
 ## 7) Service Products (`/service-products/`)
 
-### POST body
+### Exemplo de POST
 ```json
 {
   "service": "<service_uuid>",
@@ -200,7 +202,7 @@ Content-Type: application/json
 }
 ```
 
-### PATCH body (exemplo)
+### Exemplo de PATCH
 ```json
 {
   "quantity": 2
@@ -209,7 +211,7 @@ Content-Type: application/json
 
 ## 8) Schedulings (`/schedulings/`)
 
-### POST body
+### Exemplo de POST
 ```json
 {
   "clinic": "<clinic_uuid>",
@@ -230,7 +232,7 @@ Content-Type: application/json
 }
 ```
 
-### PATCH body (exemplo)
+### Exemplo de PATCH
 ```json
 {
   "status": "confirmado"
@@ -239,7 +241,7 @@ Content-Type: application/json
 
 ## 9) Stock Movements (`/stock-movements/`)
 
-### POST body
+### Exemplo de POST
 ```json
 {
   "clinic": "<clinic_uuid>",
@@ -252,7 +254,7 @@ Content-Type: application/json
 }
 ```
 
-### PATCH body (exemplo)
+### Exemplo de PATCH
 ```json
 {
   "notes": "Ajuste de observação"
@@ -261,7 +263,7 @@ Content-Type: application/json
 
 ## 10) Financial Transactions (`/financial-transactions/`)
 
-### POST body
+### Exemplo de POST
 ```json
 {
   "scheduling": "<scheduling_uuid>",
@@ -276,7 +278,7 @@ Content-Type: application/json
 }
 ```
 
-### PATCH body (exemplo)
+### Exemplo de PATCH
 ```json
 {
   "status": "pago",
@@ -286,7 +288,7 @@ Content-Type: application/json
 
 ## 11) Financial Records (`/financial-records/`)
 
-### POST body (receita)
+### Exemplo de POST (receita)
 ```json
 {
   "clinic": "<clinic_uuid>",
@@ -303,7 +305,7 @@ Content-Type: application/json
 }
 ```
 
-### POST body (despesa)
+### Exemplo de POST (despesa)
 ```json
 {
   "clinic": "<clinic_uuid>",
@@ -318,7 +320,7 @@ Content-Type: application/json
 }
 ```
 
-### PATCH body (exemplo)
+### Exemplo de PATCH
 ```json
 {
   "status": "realizado",

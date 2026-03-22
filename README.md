@@ -1,107 +1,89 @@
 # PetFlow API
 
-API REST para gestão de clínica veterinária (cadastros, agenda, estoque e finanças).
+API REST para clínica veterinária (cadastro, agenda, estoque e financeiro).
 
-## Sumário
-- [Visão geral](#visão-geral)
-- [Tecnologias](#tecnologias)
-- [Como executar](#como-executar)
-- [Autenticação e permissões](#autenticação-e-permissões)
-- [Segurança e ambiente](#segurança-e-ambiente)
-- [Documentação funcional](#documentação-funcional)
-- [Deploy](#deploy)
-- [Qualidade e testes](#qualidade-e-testes)
-- [Estrutura do projeto](#estrutura-do-projeto)
+## O que este projeto já faz
+- CRUD completo das entidades principais
+- autenticação JWT
+- leitura pública e escrita autenticada
+- validações de agenda e controle de estoque por movimentação
 
-## Visão geral
-- Projeto backend em Django + DRF.
-- Base local: `http://localhost:8000`.
-- API versionada sob prefixo `api/`.
-- IDs das entidades em UUID.
+Base local: `http://localhost:8000`  
+API: `http://localhost:8000/api/`
 
-## Tecnologias
+## Stack
 - Python 3.12
 - Django 6
 - Django REST Framework
 - Simple JWT
-- SQLite (ambiente local)
+- SQLite (local)
 
-## Como executar
+## Rodando localmente (Windows / PowerShell)
 
-1. Ativar ambiente virtual (Windows PowerShell):
+1. Ative o ambiente virtual
 
 ```powershell
 & "venv\Scripts\Activate.ps1"
 ```
 
-2. Instalar dependências:
+2. Instale as dependências
 
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Aplicar migrações:
+3. Migre o banco
 
 ```bash
 python manage.py makemigrations api
 python manage.py migrate
 ```
 
-4. Criar usuário admin:
+4. Crie um superusuário
 
 ```bash
 python manage.py createsuperuser
 ```
 
-5. Subir servidor:
+5. Suba o servidor
 
 ```bash
 python manage.py runserver
 ```
 
-## Autenticação e permissões
-
-### JWT
+## Autenticação
 - `POST /api/token/`
 - `POST /api/token/refresh/`
 
-Header para operações de escrita:
+Header para `POST`, `PUT`, `PATCH` e `DELETE`:
 
 ```http
 Authorization: Bearer <ACCESS_TOKEN>
 Content-Type: application/json
 ```
 
-### Regra de acesso
-- Leitura (`GET`) pública
-- Escrita (`POST`, `PUT`, `PATCH`, `DELETE`) autenticada
+## Ambiente e segurança
+- use [.env.example](.env.example) como base
+- em produção:
+  - `DEBUG=False`
+  - `SECRET_KEY` forte
+  - `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS` e `CORS_ALLOWED_ORIGINS` configurados
+  - banco conforme necessidade (SQLite para cenário simples; PostgreSQL recomendado em produção)
 
-## Segurança e ambiente
+## Documentação útil
+- Regras do sistema: [docs/logica-de-negocio.md](docs/logica-de-negocio.md)
+- Rotas com exemplos de payload: [docs/api-rotas-e-bodies.md](docs/api-rotas-e-bodies.md)
 
-- Configuração pronta para produção via variáveis de ambiente.
-- Use o arquivo [.env.example](.env.example) como referência.
-- Em produção, obrigatoriamente:
-	- `DEBUG=False`
-	- `SECRET_KEY` forte e secreta
-	- `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS` e `CORS_ALLOWED_ORIGINS` corretos
-	- Banco configurado conforme ambiente (SQLite para cenários simples; PostgreSQL recomendado para produção)
-
-## Documentação funcional
-
-- Lógica de negócio detalhada: [docs/logica-de-negocio.md](docs/logica-de-negocio.md)
-- Rotas e bodies por operação: [docs/api-rotas-e-bodies.md](docs/api-rotas-e-bodies.md)
-
-
-## Estrutura do projeto
+## Estrutura
 
 ```text
 PetFlow/
 ├─ api/                # models, serializers, views, signals
 ├─ docs/               # documentação funcional
 ├─ petflowapi/         # settings e urls do projeto Django
-├─ frontend/           # interface web auxiliar
-├─ .env.example        # exemplo de variáveis de ambiente
-├─ requirements.txt    # dependências do projeto
+├─ frontend/           # interface web
+├─ .env.example        # exemplo de variáveis
+├─ requirements.txt
 └─ README.md
 ```
 
