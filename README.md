@@ -94,7 +94,6 @@ Content-Type: application/json
 ## Deploy
 
 - Opção mais simples e gratuita: PythonAnywhere
-- Arquivo pronto para Render: [render.yaml](render.yaml)
 - Sugestões de hospedagem: Render, Railway ou Fly.io
 
 ## Qualidade e testes
@@ -103,13 +102,7 @@ Verificações recomendadas:
 
 ```bash
 python manage.py check
-python test_crud.py
 ```
-
-O script [test_crud.py](test_crud.py) valida:
-- criação, edição, consulta e exclusão dos recursos
-- regras de agendamento
-- atualização de estoque por sinal
 
 ## Estrutura do projeto
 
@@ -119,7 +112,6 @@ PetFlow/
 ├─ docs/               # documentação funcional
 ├─ petflowapi/         # settings e urls do projeto Django
 ├─ frontend/           # interface web auxiliar
-├─ test_crud.py        # suíte de teste CRUD e regras de negócio
 ├─ .env.example        # exemplo de variáveis de ambiente
 ├─ requirements.txt    # dependências do projeto
 └─ README.md

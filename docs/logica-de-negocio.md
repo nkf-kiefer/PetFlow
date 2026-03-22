@@ -65,5 +65,4 @@ Este documento descreve as regras de negócio aplicadas na API, o comportamento 
 3. Não há paginação/filtro padrão configurados no DRF.
 
 ## Evidência de validação
-- Script: `test_crud.py`
-- Resultado: fluxo de criação, edição, exclusão e validação de regras executado com sucesso.
+- Resultado: fluxo de criação, edição, exclusão e validação de regras foi verificado durante os testes funcionais do projeto.
