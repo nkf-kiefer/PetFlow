@@ -91,18 +91,6 @@ Content-Type: application/json
 - Lógica de negócio detalhada: [docs/logica-de-negocio.md](docs/logica-de-negocio.md)
 - Rotas e bodies por operação: [docs/api-rotas-e-bodies.md](docs/api-rotas-e-bodies.md)
 
-## Deploy
-
-- Opção mais simples e gratuita: PythonAnywhere
-- Sugestões de hospedagem: Render, Railway ou Fly.io
-
-## Qualidade e testes
-
-Verificações recomendadas:
-
-```bash
-python manage.py check
-```
 
 ## Estrutura do projeto
 
@@ -117,7 +105,7 @@ PetFlow/
 └─ README.md
 ```
 
-```
+
 
 
 
