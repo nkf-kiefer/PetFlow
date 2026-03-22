@@ -1,8 +1,5 @@
 # Rotas da API (com exemplos de payload)
 
-Base URL local: `http://localhost:8000/api`
-
-> Os exemplos abaixo são um ponto de partida. Pode copiar e adaptar os valores para o seu cenário.
 
 ## Autenticação
 

@@ -1,6 +1,4 @@
-# Lógica de negócio (resumo prático)
-
-Este arquivo é um guia rápido do que a API já valida e como ela se comporta.
+# Lógica de negócio 
 
 ## Regras principais
 
