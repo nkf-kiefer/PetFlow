@@ -22,28 +22,6 @@ let financialRecords = [];
 const tableFilters = {};
 const tableFilterTimers = {};
 
-function isMobileLayout() {
-  return window.matchMedia("(max-width: 900px)").matches;
-}
-
-function setMobileNavOpen(open) {
-  const shouldOpen = Boolean(open && isMobileLayout());
-  document.body.classList.toggle("nav-open", shouldOpen);
-  const toggleBtn = document.getElementById("mobileMenuToggle");
-  const overlay = document.getElementById("sidebarOverlay");
-  if (toggleBtn) {
-    toggleBtn.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
-    toggleBtn.setAttribute("aria-label", shouldOpen ? "Fechar menu" : "Abrir menu");
-  }
-  if (overlay) {
-    overlay.setAttribute("aria-hidden", shouldOpen ? "false" : "true");
-  }
-}
-
-function closeMobileNav() {
-  setMobileNavOpen(false);
-}
-
 function formatCurrency(value) {
   return (Number(value) || 0).toLocaleString("pt-BR", {
     style: "currency",
@@ -195,11 +173,6 @@ function switchTab(tab) {
   const pageSubtitle = document.getElementById('pageSubtitle');
   if (pageTitle) pageTitle.textContent = title;
   if (pageSubtitle) pageSubtitle.textContent = subtitle;
-
-  if (isMobileLayout()) {
-    closeMobileNav();
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
 }
 
 async function apiCall(endpoint, method = "GET", body = null) {
@@ -227,7 +200,6 @@ function logout() {
   localStorage.removeItem("authToken");
   document.getElementById("username").value = "";
   document.getElementById("password").value = "";
-  closeMobileNav();
   showLogin();
 }
 
@@ -1244,32 +1216,6 @@ function clearForm(section) {
 window.addEventListener('load', async () => {
   applyTheme(localStorage.getItem("theme") || "light");
 
-  const mobileMenuToggle = document.getElementById("mobileMenuToggle");
-  const sidebarOverlay = document.getElementById("sidebarOverlay");
-
-  if (mobileMenuToggle) {
-    mobileMenuToggle.addEventListener("click", () => {
-      const isOpen = document.body.classList.contains("nav-open");
-      setMobileNavOpen(!isOpen);
-    });
-  }
-
-  if (sidebarOverlay) {
-    sidebarOverlay.addEventListener("click", closeMobileNav);
-  }
-
-  window.addEventListener("resize", () => {
-    if (!isMobileLayout()) {
-      closeMobileNav();
-    }
-  });
-
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") {
-      closeMobileNav();
-    }
-  });
-
   // Delegação global para busca nas listas (evita perder listener ao re-renderizar)
   document.addEventListener("input", (e) => {
     const target = e.target;
@@ -1332,6 +1278,4 @@ window.addEventListener('load', async () => {
       document.getElementById('employeePhone').value = clinic.phone || '';
     }
   });
-
-  closeMobileNav();
 });
