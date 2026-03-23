@@ -53,8 +53,27 @@
 
     <!-- DASHBOARD -->
     <div id="dashboard" class="dashboard hidden">
+      <header class="mobile-topbar" id="mobileTopbar">
+        <button
+          class="mobile-menu-btn"
+          id="mobileMenuToggle"
+          type="button"
+          aria-label="Abrir menu"
+          aria-expanded="false"
+          aria-controls="sidebarNav"
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        <div class="mobile-topbar-brand">
+          <span class="brand-paw">🐾</span>
+          <span class="brand-name">PetFlow</span>
+        </div>
+      </header>
+      <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
       <!-- SIDEBAR -->
-      <aside class="sidebar">
+      <aside class="sidebar" id="sidebarNav">
         <div class="sidebar-brand">
           <span class="brand-paw">🐾</span>
           <span class="brand-name">PetFlow</span>
