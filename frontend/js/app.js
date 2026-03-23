@@ -22,6 +22,25 @@ let financialRecords = [];
 const tableFilters = {};
 const tableFilterTimers = {};
 
+function isMobileViewport() {
+  return window.matchMedia("(max-width: 900px)").matches;
+}
+
+function setMobileNavOpen(open) {
+  const shouldOpen = Boolean(open && isMobileViewport());
+  document.body.classList.toggle("mobile-nav-open", shouldOpen);
+
+  const toggleButton = document.getElementById("mobileNavToggle");
+  if (toggleButton) {
+    toggleButton.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
+    toggleButton.setAttribute("aria-label", shouldOpen ? "Fechar menu" : "Abrir menu");
+  }
+}
+
+function closeMobileNav() {
+  setMobileNavOpen(false);
+}
+
 function formatCurrency(value) {
   return (Number(value) || 0).toLocaleString("pt-BR", {
     style: "currency",
@@ -173,6 +192,10 @@ function switchTab(tab) {
   const pageSubtitle = document.getElementById('pageSubtitle');
   if (pageTitle) pageTitle.textContent = title;
   if (pageSubtitle) pageSubtitle.textContent = subtitle;
+
+  if (isMobileViewport()) {
+    closeMobileNav();
+  }
 }
 
 async function apiCall(endpoint, method = "GET", body = null) {
@@ -200,6 +223,7 @@ function logout() {
   localStorage.removeItem("authToken");
   document.getElementById("username").value = "";
   document.getElementById("password").value = "";
+  closeMobileNav();
   showLogin();
 }
 
@@ -1216,6 +1240,26 @@ function clearForm(section) {
 window.addEventListener('load', async () => {
   applyTheme(localStorage.getItem("theme") || "light");
 
+  const mobileNavToggle = document.getElementById("mobileNavToggle");
+  if (mobileNavToggle) {
+    mobileNavToggle.addEventListener("click", () => {
+      const isOpen = document.body.classList.contains("mobile-nav-open");
+      setMobileNavOpen(!isOpen);
+    });
+  }
+
+  window.addEventListener("resize", () => {
+    if (!isMobileViewport()) {
+      closeMobileNav();
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      closeMobileNav();
+    }
+  });
+
   // Delegação global para busca nas listas (evita perder listener ao re-renderizar)
   document.addEventListener("input", (e) => {
     const target = e.target;
@@ -1278,4 +1322,6 @@ window.addEventListener('load', async () => {
       document.getElementById('employeePhone').value = clinic.phone || '';
     }
   });
+
+  closeMobileNav();
 });
