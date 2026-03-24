@@ -8,7 +8,7 @@
 
   return `${window.location.origin}/api`;
 })();
-const APP_BUILD = "20260323-05";
+const APP_BUILD = "20260323-17";
 window.PETFLOW_BUILD = APP_BUILD;
 console.info("PetFlow frontend build", APP_BUILD);
 let authToken = localStorage.getItem("authToken") || null;
@@ -307,6 +307,11 @@ function switchTab(tab) {
   if (isMobileViewport()) {
     closeMobileNav();
   }
+
+  if (tab === 'schedulings') {
+    updateSchedulingPetOptions();
+    updateSchedulingTotalFromService();
+  }
 }
 
 async function apiCall(endpoint, method = "GET", body = null) {
@@ -440,6 +445,7 @@ function populateSelectors() {
   fillSelect("stockProduct", products);
   fillSelect("stockEmployee", employees);
   fillSelect("financialClinic", clinics);
+  updateSchedulingTotalFromService();
 }
 
 function fillSelect(id, items) {
@@ -452,6 +458,10 @@ function fillSelect(id, items) {
     const opt = document.createElement("option");
     opt.value = x.id || x.pk || x.uuid || x.id;
     opt.textContent = x.name || x.title || x.title || x.value || x.label || x.email || x.phone || x.name;
+    if (id === "schedulingService") {
+      const rawPrice = x.price ?? x.service_value ?? x.total_value ?? x.value ?? x.amount;
+      opt.dataset.price = String(parseMoneyValue(rawPrice));
+    }
     el.appendChild(opt);
   });
 
@@ -634,9 +644,86 @@ function updateBreedOptions() {
 
 function updateSchedulingPetOptions() {
   const tutorId = document.getElementById('schedulingTutor').value;
-  const petSelect = document.getElementById('schedulingPet');
-  const filteredPets = tutorId ? pets.filter(p => p.tutor === tutorId) : pets;
+  const filteredPets = tutorId
+    ? pets.filter((p) => String(p.tutor) === String(tutorId))
+    : pets;
   fillSelect('schedulingPet', filteredPets);
+}
+
+function parseMoneyValue(value) {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+  if (value === null || value === undefined) return 0;
+  let normalized = String(value).trim();
+  normalized = normalized.replace(/[^\d,.-]/g, '');
+
+  if (normalized.includes(',') && normalized.includes('.')) {
+    normalized = normalized.replace(/\./g, '').replace(',', '.');
+  } else if (normalized.includes(',')) {
+    normalized = normalized.replace(',', '.');
+  }
+
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function extractServicePrice(service) {
+  if (!service || typeof service !== 'object') return 0;
+  return parseMoneyValue(
+    service.price
+    ?? service.service_value
+    ?? service.total_value
+    ?? service.value
+    ?? service.amount
+  );
+}
+
+function getServicePriceById(serviceId) {
+  if (!serviceId) return 0;
+  const service = services.find((item) => String(item.id) === String(serviceId));
+  return extractServicePrice(service);
+}
+
+async function fetchServicePriceById(serviceId) {
+  if (!serviceId) return 0;
+  try {
+    const serviceData = await apiCall(`/services/${serviceId}/`);
+    return extractServicePrice(serviceData);
+  } catch (err) {
+    console.warn('Nao foi possivel obter preco do servico via API:', err);
+    return 0;
+  }
+}
+
+async function updateSchedulingTotalFromService() {
+  const serviceSelect = document.getElementById('schedulingService');
+  const totalField = document.getElementById('schedulingTotal');
+
+  if (!serviceSelect || !totalField) {
+    return;
+  }
+
+  const serviceId = serviceSelect.value;
+  const selectedOption = serviceSelect.options[serviceSelect.selectedIndex];
+  const optionPrice = parseMoneyValue(selectedOption?.dataset?.price);
+  let servicePrice = Number.isFinite(optionPrice) && optionPrice > 0
+    ? optionPrice
+    : getServicePriceById(serviceId);
+
+  if (!(servicePrice > 0) && serviceId) {
+    servicePrice = await fetchServicePriceById(serviceId);
+  }
+
+  const formattedValue = servicePrice > 0
+    ? `R$ ${servicePrice.toFixed(2).replace('.', ',')}`
+    : 'R$ 0,00';
+
+  if (totalField instanceof HTMLInputElement || totalField instanceof HTMLTextAreaElement) {
+    totalField.value = formattedValue;
+  } else {
+    totalField.textContent = formattedValue;
+  }
+
+  totalField.setAttribute('data-value', String(servicePrice > 0 ? servicePrice : 0));
 }
 
 function updateFinancialCategories() {
@@ -1222,6 +1309,27 @@ async function saveScheduling() {
   setButtonBusy(submitBtn, true);
   const editId = submitBtn.getAttribute('data-edit-id');
   const schedulingDateTime = document.getElementById('schedulingDateTime').value;
+  const selectedServiceId = document.getElementById('schedulingService').value;
+  const selectedService = document.getElementById('schedulingService');
+  const selectedOption = selectedService?.options?.[selectedService.selectedIndex];
+  let computedServiceTotal = parseMoneyValue(selectedOption?.dataset?.price);
+  if (!(computedServiceTotal > 0)) {
+    computedServiceTotal = getServicePriceById(selectedServiceId);
+  }
+  if (!(computedServiceTotal > 0) && selectedServiceId) {
+    computedServiceTotal = await fetchServicePriceById(selectedServiceId);
+  }
+  const schedulingTotalField = document.getElementById('schedulingTotal');
+  const finalLabel = computedServiceTotal > 0
+    ? `R$ ${computedServiceTotal.toFixed(2).replace('.', ',')}`
+    : 'R$ 0,00';
+  if (schedulingTotalField instanceof HTMLInputElement || schedulingTotalField instanceof HTMLTextAreaElement) {
+    schedulingTotalField.value = finalLabel;
+  } else if (schedulingTotalField) {
+    schedulingTotalField.textContent = finalLabel;
+  }
+  schedulingTotalField?.setAttribute('data-value', String(computedServiceTotal > 0 ? computedServiceTotal : 0));
+  const finalTotal = computedServiceTotal;
   const scheduling = {
     clinic: document.getElementById('schedulingClinic').value,
     tutor: document.getElementById('schedulingTutor').value,
@@ -1229,9 +1337,9 @@ async function saveScheduling() {
     employee: document.getElementById('schedulingEmployee').value,
     date_time: schedulingDateTime ? new Date(schedulingDateTime).toISOString() : null,
     status: document.getElementById('schedulingStatus').value,
-    total_value: parseFloat(document.getElementById('schedulingTotal').value) || 0,
+    total_value: finalTotal || 0,
     notes: document.getElementById('schedulingNotes').value,
-    scheduled_services: [{ service: document.getElementById('schedulingService').value, service_value: parseFloat(document.getElementById('schedulingTotal').value) || 0 }],
+    scheduled_services: selectedServiceId ? [{ service: selectedServiceId, service_value: finalTotal || 0 }] : [],
   };
 
   if (!scheduling.clinic || !scheduling.tutor || !scheduling.pet || !scheduling.employee || !scheduling.date_time) {
@@ -1267,9 +1375,9 @@ function editScheduling(id) {
   document.getElementById('schedulingEmployee').value = s.employee || '';
   document.getElementById('schedulingDateTime').value = s.date_time ? new Date(s.date_time).toISOString().slice(0, 16) : '';
   document.getElementById('schedulingStatus').value = s.status || 'agendado';
-  document.getElementById('schedulingTotal').value = s.total_value || '';
   document.getElementById('schedulingService').value = s.scheduled_services?.[0]?.service || '';
   document.getElementById('schedulingNotes').value = s.notes || '';
+  updateSchedulingTotalFromService();
   const btn = document.querySelector("#schedulingsSection button[onclick='saveScheduling()']");
   btn.setAttribute('data-edit-id', id); btn.textContent='Atualizar Agendamento'; btn.style.background='#0ea5e9';
   setFormEditMode('schedulingsSection', true);
@@ -1283,7 +1391,15 @@ async function deleteScheduling(id) {
 }
 
 function clearSchedulingForm() {
-  ['schedulingClinic','schedulingTutor','schedulingPet','schedulingEmployee','schedulingDateTime','schedulingStatus','schedulingTotal','schedulingService','schedulingNotes'].forEach(id=>document.getElementById(id).value='');
+  ['schedulingClinic','schedulingTutor','schedulingPet','schedulingEmployee','schedulingDateTime','schedulingStatus','schedulingService','schedulingNotes'].forEach(id=>document.getElementById(id).value='');
+  const schedulingTotalField = document.getElementById('schedulingTotal');
+  if (schedulingTotalField instanceof HTMLInputElement || schedulingTotalField instanceof HTMLTextAreaElement) {
+    schedulingTotalField.value = 'R$ 0,00';
+  } else if (schedulingTotalField) {
+    schedulingTotalField.textContent = 'R$ 0,00';
+  }
+  schedulingTotalField?.setAttribute('data-value', '0');
+  updateSchedulingTotalFromService();
   const btn = document.querySelector("#schedulingsSection button[onclick='saveScheduling()']");
   btn.removeAttribute('data-edit-id'); btn.textContent='Salvar Agendamento'; btn.style.background = '#059669';
   setFormEditMode('schedulingsSection', false);
@@ -1517,6 +1633,10 @@ window.addEventListener('load', async () => {
     const target = event.target;
     if (!(target instanceof HTMLSelectElement)) return;
     markEditDirtyForElement(target);
+
+    if (target.id === 'schedulingService') {
+      updateSchedulingTotalFromService();
+    }
   });
 
   // Delegação global para busca nas listas (evita perder listener ao re-renderizar)
@@ -1585,6 +1705,12 @@ window.addEventListener('load', async () => {
       document.getElementById('employeePhone').value = clinic.phone || '';
     }
   });
+
+  const schedulingServiceSelect = document.getElementById('schedulingService');
+  if (schedulingServiceSelect) {
+    schedulingServiceSelect.addEventListener('change', updateSchedulingTotalFromService);
+    schedulingServiceSelect.addEventListener('input', updateSchedulingTotalFromService);
+  }
 
   closeMobileNav();
 });
