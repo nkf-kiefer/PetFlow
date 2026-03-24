@@ -18,6 +18,28 @@ API: `http://localhost:8000/api/`
 - Simple JWT
 - SQLite (local)
 
+## Banco de dados e arquitetura de dados
+
+### Como o banco funciona hoje
+- Em desenvolvimento local, o projeto usa SQLite no arquivo `db.sqlite3`.
+- Esse arquivo fica na máquina que está executando o backend.
+- Se você abrir o frontend em outro computador, os dados só aparecem se ambos estiverem consumindo a mesma API remota.
+
+### Decisão de arquitetura adotada
+- Para simplificar operação e custo inicial, o backend foi pensado com banco centralizado no servidor de deploy.
+- No plano atual, o servidor mantém um único SQLite para todos os usuários do sistema.
+- O frontend (qualquer dispositivo) deve apontar para a mesma `API_BASE` publicada.
+
+### Implicações práticas
+- Dois ambientes diferentes (ex.: localhost e produção) terão bases diferentes.
+- Backup pode ser feito copiando o arquivo SQLite do servidor.
+- Migrations continuam sendo obrigatórias a cada mudança de schema.
+
+### Evolução recomendada
+- Enquanto o volume for pequeno e com baixa concorrência, SQLite centralizado atende bem.
+- Para crescimento de uso concorrente, relatórios pesados ou múltiplas integrações, a migração para PostgreSQL é o próximo passo natural.
+- A API já está organizada de forma que a troca de engine de banco seja majoritariamente de configuração e migração.
+
 ## Rodando localmente (Windows / PowerShell)
 
 1. Ative o ambiente virtual

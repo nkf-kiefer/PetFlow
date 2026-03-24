@@ -4,6 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PetFlow</title>
+    <link
+      id="siteFavicon"
+      rel="icon"
+      type="image/jpeg"
+      href="https://images.weserv.nl/?url=commons.wikimedia.org/wiki/Special:FilePath/Doberman4.jpg&w=180&h=180&fit=cover&output=jpg"
+    />
+    <link
+      id="appleTouchIcon"
+      rel="apple-touch-icon"
+      href="https://images.weserv.nl/?url=commons.wikimedia.org/wiki/Special:FilePath/Doberman4.jpg&w=180&h=180&fit=cover&output=jpg"
+    />
     <script>
       window.PETFLOW_API_BASE = "https://Nataliakiefer.pythonanywhere.com/api";
     </script>
@@ -13,14 +24,20 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/style.css?v=20260323-05" />
   </head>
   <body>
     <!-- LOGIN -->
     <div id="loginPage" class="login-page">
       <div class="login-card">
         <div class="login-brand">
-          <span class="brand-paw">🐾</span>
+          <img
+            class="brand-photo"
+            src="https://images.weserv.nl/?url=commons.wikimedia.org/wiki/Special:FilePath/Modry-dobrman.jpg&w=180&h=180&fit=cover&output=jpg"
+            alt="Doberman"
+            width="160"
+            height="160"
+          />
           <div>
             <h1>PetFlow</h1>
             <p>Sistema de gestão veterinária</p>
@@ -57,7 +74,13 @@
       <aside class="sidebar">
         <div class="sidebar-brand">
           <div class="brand-main">
-            <span class="brand-paw">🐾</span>
+            <img
+              class="brand-photo"
+              src="https://images.weserv.nl/?url=commons.wikimedia.org/wiki/Special:FilePath/Modry-dobrman.jpg&w=180&h=180&fit=cover&output=jpg"
+              alt="Doberman"
+              width="160"
+              height="160"
+            />
             <span class="brand-name">PetFlow</span>
           </div>
           <button
@@ -419,10 +442,20 @@
                 </div>
               </div>
               <div class="form-actions">
-                <button class="btn btn-ghost" onclick="clearForm('clinic')">
+                <button
+                  id="clearClinicBtn"
+                  type="button"
+                  class="btn btn-ghost"
+                  onclick="clearForm('clinic')"
+                >
                   Novo
                 </button>
-                <button class="btn btn-primary" onclick="saveClinic()">
+                <button
+                  id="saveClinicBtn"
+                  type="button"
+                  class="btn btn-primary"
+                  onclick="saveClinic()"
+                >
                   Salvar Clínica
                 </button>
               </div>
@@ -1145,6 +1178,8 @@
       </main>
     </div>
 
-    <script src="js/app.js"></script>
+    <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+    <script src="js/app.js?v=20260323-08"></script>
   </body>
 </html>

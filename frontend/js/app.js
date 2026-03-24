@@ -8,6 +8,9 @@
 
   return `${window.location.origin}/api`;
 })();
+const APP_BUILD = "20260323-05";
+window.PETFLOW_BUILD = APP_BUILD;
+console.info("PetFlow frontend build", APP_BUILD);
 let authToken = localStorage.getItem("authToken") || null;
 
 let clinics = [];
@@ -21,6 +24,109 @@ let stockMovements = [];
 let financialRecords = [];
 const tableFilters = {};
 const tableFilterTimers = {};
+const FORM_SECTION_TO_KEY = {
+  clinicsSection: 'clinic',
+  tutorsSection: 'tutor',
+  petsSection: 'pet',
+  servicesSection: 'service',
+  productsSection: 'product',
+  employeesSection: 'employee',
+  schedulingsSection: 'scheduling',
+  stockmovementsSection: 'stock',
+  financialrecordsSection: 'financial',
+};
+const editState = {
+  sectionId: null,
+  dirty: false,
+};
+let clinicEditingId = null;
+
+const BRAND_IMAGE_CANDIDATES = [
+  "https://images.weserv.nl/?url=commons.wikimedia.org/wiki/Special:FilePath/Modry-dobrman.jpg&w=180&h=180&fit=cover&output=jpg",
+  "https://images.weserv.nl/?url=commons.wikimedia.org/wiki/Special:FilePath/Doberman-12833551920.jpg&w=180&h=180&fit=cover&output=jpg",
+  "https://images.weserv.nl/?url=commons.wikimedia.org/wiki/Special:FilePath/Doberman4.jpg&w=180&h=180&fit=cover&output=jpg",
+];
+
+const ICON_IMAGE_CANDIDATES = [
+  "https://images.weserv.nl/?url=commons.wikimedia.org/wiki/Special:FilePath/Doberman4.jpg&w=180&h=180&fit=cover&output=jpg",
+  "https://images.weserv.nl/?url=commons.wikimedia.org/wiki/Special:FilePath/Modry-dobrman.jpg&w=180&h=180&fit=cover&output=jpg",
+  "https://images.weserv.nl/?url=commons.wikimedia.org/wiki/Special:FilePath/Doberman-12833551920.jpg&w=180&h=180&fit=cover&output=jpg",
+];
+
+function preloadImage(url) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(true);
+    img.onerror = () => resolve(false);
+    img.src = url;
+  });
+}
+
+async function pickFirstAvailableImage(candidates) {
+  for (const url of candidates) {
+    const ok = await preloadImage(url);
+    if (ok) return url;
+  }
+  return null;
+}
+
+async function applyBestBrandImage() {
+  const selectedBrand = await pickFirstAvailableImage(BRAND_IMAGE_CANDIDATES);
+  const selectedIcon = (await pickFirstAvailableImage(ICON_IMAGE_CANDIDATES)) || selectedBrand;
+
+  if (selectedBrand) {
+    document.querySelectorAll(".brand-photo").forEach((img) => {
+      img.setAttribute("src", selectedBrand);
+    });
+  }
+
+  if (selectedIcon) {
+    const favicon = document.getElementById("siteFavicon");
+    if (favicon) {
+      favicon.setAttribute("href", selectedIcon);
+    }
+
+    const appleTouchIcon = document.getElementById("appleTouchIcon");
+    if (appleTouchIcon) {
+      appleTouchIcon.setAttribute("href", selectedIcon);
+    }
+  }
+}
+
+function inferNoticeType(message) {
+  const text = String(message || '').toLowerCase();
+  if (text.includes('sucesso') || text.includes('atualizad') || text.includes('salv')) return 'success';
+  if (text.includes('erro') || text.includes('inválid') || text.includes('invalid')) return 'error';
+  if (text.includes('sess') || text.includes('expir') || text.includes('preencha') || text.includes('obrigat')) return 'warning';
+  return 'info';
+}
+
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toastContainer');
+  if (!container) {
+    // Fallback for early calls before DOM is ready.
+    window.console.log(message);
+    return;
+  }
+
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.textContent = String(message);
+  container.appendChild(toast);
+
+  window.requestAnimationFrame(() => {
+    toast.classList.add('show');
+  });
+
+  window.setTimeout(() => {
+    toast.classList.remove('show');
+    window.setTimeout(() => toast.remove(), 220);
+  }, 2600);
+}
+
+function alert(message) {
+  showToast(message, inferNoticeType(message));
+}
 
 function isMobileViewport() {
   return window.matchMedia("(max-width: 900px)").matches;
@@ -168,9 +274,14 @@ function showDashboard() {
 }
 
 function switchTab(tab) {
+  const targetSectionId = `${tab}Section`;
+  if (!confirmDiscardIfNeeded(targetSectionId)) {
+    return;
+  }
+
   document.querySelectorAll(".section").forEach((s) => s.classList.add("hidden"));
   document.querySelectorAll(".nav-item").forEach((b) => b.classList.remove("active"));
-  const el = document.getElementById(`${tab}Section`);
+  const el = document.getElementById(targetSectionId);
   if (el) el.classList.remove("hidden");
   // Ativar o botão de nav correto
   const activeBtn = document.querySelector(`.nav-item[data-tab="${tab}"]`);
@@ -207,11 +318,32 @@ async function apiCall(endpoint, method = "GET", body = null) {
 
   const response = await fetch(`${API_BASE}${endpoint}`, options);
   if (!response.ok) {
+    let errorMessage = `API error ${response.status}`;
+    try {
+      const errorData = await response.json();
+      if (typeof errorData?.detail === "string") {
+        errorMessage = errorData.detail;
+      } else if (Array.isArray(errorData?.non_field_errors) && errorData.non_field_errors.length > 0) {
+        errorMessage = errorData.non_field_errors[0];
+      } else if (errorData && typeof errorData === "object") {
+        const firstEntry = Object.entries(errorData)[0];
+        if (firstEntry) {
+          const [field, value] = firstEntry;
+          const text = Array.isArray(value) ? value[0] : value;
+          if (typeof text === "string") {
+            errorMessage = `${field}: ${text}`;
+          }
+        }
+      }
+    } catch {
+      // Ignore parse errors and keep default message.
+    }
+
     if (response.status === 401) {
       alert("Sessão expirada. Faça login novamente.");
       logout();
     }
-    throw new Error(`API error ${response.status}`);
+    throw new Error(errorMessage);
   }
 
   if (response.status !== 204) return await response.json();
@@ -329,6 +461,89 @@ function fillSelect(id, items) {
 function setFieldValue(id, value) {
   const el = document.getElementById(id);
   if (el) el.value = value;
+}
+
+function scrollToEditForm(sectionId, firstFieldId) {
+  const section = document.getElementById(sectionId);
+  const firstField = document.getElementById(firstFieldId);
+  const anchor = section?.querySelector(".card") || section;
+
+  if (anchor) {
+    anchor.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  // Move focus after scrolling to highlight where editing will happen.
+  if (firstField instanceof HTMLElement) {
+    window.setTimeout(() => {
+      try {
+        firstField.focus({ preventScroll: true });
+      } catch {
+        firstField.focus();
+      }
+    }, 180);
+  }
+}
+
+function setFormEditMode(sectionId, isEditing) {
+  const cancelBtn = document.querySelector(`#${sectionId} .form-actions .btn-ghost`);
+  if (cancelBtn) {
+    cancelBtn.textContent = isEditing ? "Cancelar edição" : "Novo";
+    cancelBtn.setAttribute(
+      "aria-label",
+      isEditing ? "Cancelar edição e limpar formulário" : "Criar novo registro"
+    );
+  }
+
+  const formCard = document.querySelector(`#${sectionId} .form-card`);
+  formCard?.classList.toggle("is-editing", isEditing);
+
+  const title = formCard?.querySelector(".card-header h3");
+  if (title) {
+    let hint = title.querySelector(".edit-mode-hint");
+    if (!hint) {
+      hint = document.createElement("span");
+      hint.className = "edit-mode-hint hidden";
+      hint.textContent = "Modo edicao";
+      title.appendChild(hint);
+    }
+    hint.classList.toggle("hidden", !isEditing);
+  }
+
+  if (isEditing) {
+    editState.sectionId = sectionId;
+    editState.dirty = false;
+  } else if (editState.sectionId === sectionId) {
+    editState.sectionId = null;
+    editState.dirty = false;
+  }
+}
+
+function setButtonBusy(button, busy) {
+  if (!(button instanceof HTMLButtonElement)) return;
+  button.disabled = busy;
+  button.classList.toggle("is-busy", busy);
+}
+
+function markEditDirtyForElement(element) {
+  if (!editState.sectionId || !(element instanceof HTMLElement)) return;
+  const section = element.closest('.section');
+  if (section?.id === editState.sectionId) {
+    editState.dirty = true;
+  }
+}
+
+function confirmDiscardIfNeeded(nextSectionId = null) {
+  if (!editState.sectionId || !editState.dirty) return true;
+  if (nextSectionId && nextSectionId === editState.sectionId) return true;
+  return confirm('Existem alteracoes nao salvas. Deseja descartar e continuar?');
+}
+
+function cancelCurrentEditing() {
+  if (!editState.sectionId) return false;
+  const sectionKey = FORM_SECTION_TO_KEY[editState.sectionId];
+  if (!sectionKey) return false;
+  clearForm(sectionKey);
+  return true;
 }
 
 function updatePetOptions() {
@@ -586,30 +801,43 @@ function setEditButton(section, label) {
 // Implement the individual actions. To save time, reused code patterns.
 
 async function saveClinic(){
-  const editId = document.querySelector("#clinicsSection button[onclick='saveClinic()']").getAttribute('data-edit-id');
+  const saveClinicBtn = document.getElementById('saveClinicBtn');
+  if (!(saveClinicBtn instanceof HTMLButtonElement)) {
+    alert('Erro interno: botão de salvar clínica não encontrado. Atualize a página.');
+    return;
+  }
+  const editId = clinicEditingId || saveClinicBtn.getAttribute('data-edit-id');
+  if (editId) {
+    saveClinicBtn.setAttribute('data-edit-id', String(editId));
+  }
+  setButtonBusy(saveClinicBtn, true);
+  const normalizeOptional = (value) => {
+    const text = String(value ?? "").trim();
+    return text ? text : null;
+  };
   const clinic = {
-    name: document.getElementById("clinicName").value,
-    cnpj: document.getElementById("clinicCnpj").value,
-    email: document.getElementById("clinicEmail").value,
-    phone: document.getElementById("clinicPhone").value,
-    address: document.getElementById("clinicAddress").value,
-    city: document.getElementById("clinicCity").value,
-    state: document.getElementById("clinicState").value,
-    zip_code: document.getElementById("clinicZipCode").value,
-    opening_time: document.getElementById("clinicOpeningTime").value,
-    closing_time: document.getElementById("clinicClosingTime").value,
-    appointment_interval: document.getElementById("clinicAppointmentInterval").value,
-    work_days: document.getElementById("clinicWorkDays").value,
+    name: String(document.getElementById("clinicName").value || "").trim(),
+    cnpj: normalizeOptional(document.getElementById("clinicCnpj").value),
+    email: normalizeOptional(document.getElementById("clinicEmail").value),
+    phone: normalizeOptional(document.getElementById("clinicPhone").value),
+    address: normalizeOptional(document.getElementById("clinicAddress").value),
+    city: normalizeOptional(document.getElementById("clinicCity").value),
+    state: normalizeOptional(document.getElementById("clinicState").value),
+    zip_code: normalizeOptional(document.getElementById("clinicZipCode").value),
+    opening_time: document.getElementById("clinicOpeningTime").value || "08:00",
+    closing_time: document.getElementById("clinicClosingTime").value || "20:00",
+    appointment_interval: parseInt(document.getElementById("clinicAppointmentInterval").value, 10) || 30,
+    work_days: document.getElementById("clinicWorkDays").value || "seg-sex",
   };
 
   try {
     if (editId) {
       await apiCall(`/clinics/${editId}/`, "PATCH", clinic);
       alert("Clínica atualizada com sucesso!");
-      const submitBtn = document.querySelector("#clinicsSection button[onclick='saveClinic()']");
-      submitBtn.removeAttribute('data-edit-id');
-      submitBtn.textContent = 'Salvar Clínica';
-      submitBtn.style.background = '#059669';
+      clinicEditingId = null;
+      saveClinicBtn.removeAttribute('data-edit-id');
+      saveClinicBtn.textContent = 'Salvar Clínica';
+      saveClinicBtn.style.background = '#059669';
     } else {
       await apiCall("/clinics/", "POST", clinic);
       alert("Clínica salva com sucesso!");
@@ -618,13 +846,16 @@ async function saveClinic(){
     await loadAllData();
   } catch (err) {
     console.error(err);
-    alert('Erro ao salvar clínica.');
+    alert(`Erro ao salvar clínica: ${err.message || 'verifique os dados.'}`);
+  } finally {
+    setButtonBusy(saveClinicBtn, false);
   }
 }
 
 function editClinic(id){
-  const c = clinics.find((x)=>x.id===id);
+  const c = clinics.find((x) => String(x.id) === String(id));
   if (!c) return;
+  clinicEditingId = String(id);
   document.getElementById('clinicName').value=c.name||'';
   document.getElementById('clinicCnpj').value=c.cnpj||'';
   document.getElementById('clinicEmail').value=c.email||'';
@@ -637,8 +868,11 @@ function editClinic(id){
   document.getElementById('clinicClosingTime').value=c.closing_time||'';
   document.getElementById('clinicAppointmentInterval').value=c.appointment_interval||30;
   document.getElementById('clinicWorkDays').value=c.work_days||'seg-sex';
-  const btn=document.querySelector("#clinicsSection button[onclick='saveClinic()']");
-  btn.setAttribute('data-edit-id',id); btn.textContent='Atualizar Clínica'; btn.style.background='#0ea5e9';
+  const btn = document.getElementById('saveClinicBtn');
+  if (!(btn instanceof HTMLButtonElement)) return;
+  btn.setAttribute('data-edit-id', clinicEditingId); btn.textContent='Atualizar Clínica'; btn.style.background='#0ea5e9';
+  setFormEditMode('clinicsSection', true);
+  scrollToEditForm('clinicsSection', 'clinicName');
 }
 
 async function deleteClinic(id){
@@ -648,13 +882,22 @@ async function deleteClinic(id){
 }
 
 function clearClinicForm(){
-  ['clinicName','clinicCnpj','clinicEmail','clinicPhone','clinicAddress','clinicCity','clinicState','clinicZipCode','clinicOpeningTime','clinicClosingTime','clinicAppointmentInterval','clinicWorkDays'].forEach(id => document.getElementById(id).value='');
-  const btn=document.querySelector("#clinicsSection button[onclick='saveClinic()']");
+  clinicEditingId = null;
+  ['clinicName','clinicCnpj','clinicEmail','clinicPhone','clinicAddress','clinicCity','clinicState','clinicZipCode'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('clinicOpeningTime').value = '08:00';
+  document.getElementById('clinicClosingTime').value = '20:00';
+  document.getElementById('clinicAppointmentInterval').value = '30';
+  document.getElementById('clinicWorkDays').value = 'seg-sex';
+  const btn = document.getElementById('saveClinicBtn');
+  if (!(btn instanceof HTMLButtonElement)) return;
   btn.removeAttribute('data-edit-id'); btn.textContent='Salvar Clínica'; btn.style.background = '#059669';
+  setFormEditMode('clinicsSection', false);
 }
 
 async function saveTutor() {
-  const editId = document.querySelector("#tutorsSection button[onclick='saveTutor()']").getAttribute('data-edit-id');
+  const submitBtn = document.querySelector("#tutorsSection button[onclick='saveTutor()']");
+  setButtonBusy(submitBtn, true);
+  const editId = submitBtn.getAttribute('data-edit-id');
   const tutor = {
     clinic: document.getElementById('tutorClinic').value,
     name: document.getElementById('tutorName').value,
@@ -677,6 +920,8 @@ async function saveTutor() {
   } catch (err) {
     console.error(err);
     alert('Erro ao salvar tutor.');
+  } finally {
+    setButtonBusy(submitBtn, false);
   }
 }
 
@@ -691,6 +936,8 @@ function editTutor(id) {
   document.getElementById('tutorSecondaryPhone').value = t.secondary_phone || '';
   const btn = document.querySelector("#tutorsSection button[onclick='saveTutor()']");
   btn.setAttribute('data-edit-id', id); btn.textContent = 'Atualizar Tutor'; btn.style.background = '#0ea5e9';
+  setFormEditMode('tutorsSection', true);
+  scrollToEditForm('tutorsSection', 'tutorName');
 }
 
 async function deleteTutor(id) {
@@ -703,10 +950,13 @@ function clearTutorForm() {
   ['tutorClinic','tutorName','tutorCpf','tutorEmail','tutorPhone','tutorSecondaryPhone'].forEach(id => document.getElementById(id).value='');
   const btn = document.querySelector("#tutorsSection button[onclick='saveTutor()']");
   btn.removeAttribute('data-edit-id'); btn.textContent='Salvar Tutor'; btn.style.background = '#059669';
+  setFormEditMode('tutorsSection', false);
 }
 
 async function savePet() {
-  const editId = document.querySelector("#petsSection button[onclick='savePet()']").getAttribute('data-edit-id');
+  const submitBtn = document.querySelector("#petsSection button[onclick='savePet()']");
+  setButtonBusy(submitBtn, true);
+  const editId = submitBtn.getAttribute('data-edit-id');
   const pet = {
     tutor: document.getElementById('petTutor').value,
     name: document.getElementById('petName').value,
@@ -734,6 +984,8 @@ async function savePet() {
   } catch (err) {
     console.error(err);
     alert('Erro ao salvar pet.');
+  } finally {
+    setButtonBusy(submitBtn, false);
   }
 }
 
@@ -754,6 +1006,8 @@ function editPet(id) {
   document.getElementById('petNotes').value = p.notes || '';
   const btn = document.querySelector("#petsSection button[onclick='savePet()']");
   btn.setAttribute('data-edit-id', id); btn.textContent='Atualizar Pet'; btn.style.background='#0ea5e9';
+  setFormEditMode('petsSection', true);
+  scrollToEditForm('petsSection', 'petName');
 }
 
 async function deletePet(id) {
@@ -766,10 +1020,13 @@ function clearPetForm() {
   ['petTutor','petName','petSpecies','petBreed','petStandardBreed','petBirthDate','petColor','petWeight','petGender','petSize','petNotes'].forEach(id => document.getElementById(id).value='');
   const btn = document.querySelector("#petsSection button[onclick='savePet()']");
   btn.removeAttribute('data-edit-id'); btn.textContent='Salvar Pet'; btn.style.background = '#059669';
+  setFormEditMode('petsSection', false);
 }
 
 async function saveService() {
-  const editId = document.getElementById('saveServiceBtn').getAttribute('data-edit-id');
+  const submitBtn = document.getElementById('saveServiceBtn');
+  setButtonBusy(submitBtn, true);
+  const editId = submitBtn.getAttribute('data-edit-id');
   const service = {
     name: document.getElementById('serviceName').value,
     category: document.getElementById('serviceCategory').value,
@@ -792,6 +1049,8 @@ async function saveService() {
   } catch (err) {
     console.error(err);
     alert('Erro ao salvar serviço.');
+  } finally {
+    setButtonBusy(submitBtn, false);
   }
 }
 
@@ -805,6 +1064,8 @@ function editService(id) {
   document.getElementById('serviceDescription').value = s.description || '';
   const btn = document.getElementById('saveServiceBtn');
   btn.setAttribute('data-edit-id', id); btn.textContent='Atualizar Serviço'; btn.style.background='#0ea5e9';
+  setFormEditMode('servicesSection', true);
+  scrollToEditForm('servicesSection', 'serviceName');
 }
 
 async function deleteService(id) {
@@ -817,10 +1078,13 @@ function clearServiceForm() {
   ['serviceName','serviceCategory','servicePrice','serviceDuration','serviceDescription'].forEach(id => document.getElementById(id).value='');
   const btn = document.getElementById('saveServiceBtn');
   btn.removeAttribute('data-edit-id'); btn.textContent='Salvar Serviço'; btn.style.background = '#059669';
+  setFormEditMode('servicesSection', false);
 }
 
 async function saveProduct() {
-  const editId = document.querySelector("#productsSection button[onclick='saveProduct()']").getAttribute('data-edit-id');
+  const submitBtn = document.querySelector("#productsSection button[onclick='saveProduct()']");
+  setButtonBusy(submitBtn, true);
+  const editId = submitBtn.getAttribute('data-edit-id');
   const product = {
     clinic: document.getElementById('productClinic').value,
     name: document.getElementById('productName').value,
@@ -847,6 +1111,8 @@ async function saveProduct() {
   } catch (err) {
     console.error(err);
     alert('Erro ao salvar produto.');
+  } finally {
+    setButtonBusy(submitBtn, false);
   }
 }
 
@@ -864,6 +1130,8 @@ function editProduct(id) {
   document.getElementById('productDescription').value = p.description || '';
   const btn = document.querySelector("#productsSection button[onclick='saveProduct()']");
   btn.setAttribute('data-edit-id', id); btn.textContent='Atualizar Produto'; btn.style.background='#0ea5e9';
+  setFormEditMode('productsSection', true);
+  scrollToEditForm('productsSection', 'productName');
 }
 
 async function deleteProduct(id) {
@@ -876,10 +1144,13 @@ function clearProductForm() {
   ['productClinic','productName','productCategory','productBrand','productQuantity','productMinStock','productAlertThreshold','productPrice','productDescription'].forEach(id => document.getElementById(id).value='');
   const btn = document.querySelector("#productsSection button[onclick='saveProduct()']");
   btn.removeAttribute('data-edit-id'); btn.textContent='Salvar Produto'; btn.style.background = '#059669';
+  setFormEditMode('productsSection', false);
 }
 
 async function saveEmployee() {
-  const editId = document.querySelector("#employeesSection button[onclick='saveEmployee()']").getAttribute('data-edit-id');
+  const submitBtn = document.querySelector("#employeesSection button[onclick='saveEmployee()']");
+  setButtonBusy(submitBtn, true);
+  const editId = submitBtn.getAttribute('data-edit-id');
   const employee = {
     clinic: document.getElementById('employeeClinic').value,
     name: document.getElementById('employeeName').value,
@@ -893,6 +1164,7 @@ async function saveEmployee() {
 
   if (!employee.email || !employee.name || !employee.role || (!employee.password && !editId)) {
     alert('Preencha dados obrigatórios do funcionário.');
+    setButtonBusy(submitBtn, false);
     return;
   }
 
@@ -909,6 +1181,8 @@ async function saveEmployee() {
   } catch (err) {
     console.error(err);
     alert('Erro ao salvar funcionário.');
+  } finally {
+    setButtonBusy(submitBtn, false);
   }
 }
 
@@ -925,6 +1199,8 @@ function editEmployee(id) {
   document.getElementById('employeeIsActive').value = String(e.is_active ?? true);
   const btn = document.querySelector("#employeesSection button[onclick='saveEmployee()']");
   btn.setAttribute('data-edit-id', id); btn.textContent='Atualizar Funcionário'; btn.style.background='#0ea5e9';
+  setFormEditMode('employeesSection', true);
+  scrollToEditForm('employeesSection', 'employeeName');
 }
 
 async function deleteEmployee(id) {
@@ -938,10 +1214,13 @@ function clearEmployeeForm() {
   document.getElementById('employeeIsActive').value = 'true';
   const btn = document.querySelector("#employeesSection button[onclick='saveEmployee()']");
   btn.removeAttribute('data-edit-id'); btn.textContent='Salvar Funcionário'; btn.style.background = '#059669';
+  setFormEditMode('employeesSection', false);
 }
 
 async function saveScheduling() {
-  const editId = document.querySelector("#schedulingsSection button[onclick='saveScheduling()']").getAttribute('data-edit-id');
+  const submitBtn = document.querySelector("#schedulingsSection button[onclick='saveScheduling()']");
+  setButtonBusy(submitBtn, true);
+  const editId = submitBtn.getAttribute('data-edit-id');
   const schedulingDateTime = document.getElementById('schedulingDateTime').value;
   const scheduling = {
     clinic: document.getElementById('schedulingClinic').value,
@@ -957,6 +1236,7 @@ async function saveScheduling() {
 
   if (!scheduling.clinic || !scheduling.tutor || !scheduling.pet || !scheduling.employee || !scheduling.date_time) {
     alert('Preencha todos os campos obrigatórios de agendamento.');
+    setButtonBusy(submitBtn, false);
     return;
   }
 
@@ -973,6 +1253,8 @@ async function saveScheduling() {
   } catch (err) {
     console.error(err);
     alert('Erro ao salvar agendamento.');
+  } finally {
+    setButtonBusy(submitBtn, false);
   }
 }
 
@@ -990,6 +1272,8 @@ function editScheduling(id) {
   document.getElementById('schedulingNotes').value = s.notes || '';
   const btn = document.querySelector("#schedulingsSection button[onclick='saveScheduling()']");
   btn.setAttribute('data-edit-id', id); btn.textContent='Atualizar Agendamento'; btn.style.background='#0ea5e9';
+  setFormEditMode('schedulingsSection', true);
+  scrollToEditForm('schedulingsSection', 'schedulingClinic');
 }
 
 async function deleteScheduling(id) {
@@ -1002,10 +1286,13 @@ function clearSchedulingForm() {
   ['schedulingClinic','schedulingTutor','schedulingPet','schedulingEmployee','schedulingDateTime','schedulingStatus','schedulingTotal','schedulingService','schedulingNotes'].forEach(id=>document.getElementById(id).value='');
   const btn = document.querySelector("#schedulingsSection button[onclick='saveScheduling()']");
   btn.removeAttribute('data-edit-id'); btn.textContent='Salvar Agendamento'; btn.style.background = '#059669';
+  setFormEditMode('schedulingsSection', false);
 }
 
 async function saveStockMovement() {
-  const editId = document.querySelector("#stockmovementsSection button[onclick='saveStockMovement()']").getAttribute('data-edit-id');
+  const submitBtn = document.querySelector("#stockmovementsSection button[onclick='saveStockMovement()']");
+  setButtonBusy(submitBtn, true);
+  const editId = submitBtn.getAttribute('data-edit-id');
   const movement = {
     clinic: document.getElementById('stockClinic').value,
     product: document.getElementById('stockProduct').value,
@@ -1018,6 +1305,7 @@ async function saveStockMovement() {
 
   if (!movement.clinic || !movement.product || !movement.movement_type || !movement.quantity) {
     alert('Preencha todos os campos obrigatórios de estoque.');
+    setButtonBusy(submitBtn, false);
     return;
   }
 
@@ -1034,6 +1322,8 @@ async function saveStockMovement() {
   } catch (err) {
     console.error(err);
     alert('Erro ao registrar movimento.');
+  } finally {
+    setButtonBusy(submitBtn, false);
   }
 }
 
@@ -1049,6 +1339,8 @@ function editStockMovement(id) {
   document.getElementById('stockNotes').value = m.notes || '';
   const btn = document.querySelector("#stockmovementsSection button[onclick='saveStockMovement()']");
   btn.setAttribute('data-edit-id', id); btn.textContent='Atualizar Movimento'; btn.style.background='#0ea5e9';
+  setFormEditMode('stockmovementsSection', true);
+  scrollToEditForm('stockmovementsSection', 'stockClinic');
 }
 
 async function deleteStockMovement(id) {
@@ -1061,10 +1353,13 @@ function clearStockForm() {
   ['stockClinic','stockProduct','stockMovementType','stockQuantity','stockDescription','stockEmployee','stockNotes'].forEach(id => document.getElementById(id).value='');
   const btn = document.querySelector("#stockmovementsSection button[onclick='saveStockMovement()']");
   btn.removeAttribute('data-edit-id'); btn.textContent='Registrar Movimento'; btn.style.background = '#059669';
+  setFormEditMode('stockmovementsSection', false);
 }
 
 async function saveFinancialRecord() {
-  const editId = document.querySelector("#financialrecordsSection button[onclick='saveFinancialRecord()']").getAttribute('data-edit-id');
+  const submitBtn = document.querySelector("#financialrecordsSection button[onclick='saveFinancialRecord()']");
+  setButtonBusy(submitBtn, true);
+  const editId = submitBtn.getAttribute('data-edit-id');
   const record = {
     clinic: document.getElementById('financialClinic').value,
     record_type: document.getElementById('financialRecordType').value,
@@ -1079,16 +1374,19 @@ async function saveFinancialRecord() {
 
   if (!record.clinic || !record.record_type || !record.category || !record.amount || !record.due_date) {
     alert('Preencha todos os campos obrigatórios financeiros.');
+    setButtonBusy(submitBtn, false);
     return;
   }
 
   try {
     if (record.record_type === 'receita' && ['salario','aluguel','energia','agua','telefone','manutencao','marketing'].includes(record.category)) {
       alert('Categoria inválida para receita.');
+      setButtonBusy(submitBtn, false);
       return;
     }
     if (record.record_type === 'despesa' && !['salario','aluguel','energia','agua','telefone','manutencao','marketing','outro'].includes(record.category)) {
       alert('Categoria inválida para despesa.');
+      setButtonBusy(submitBtn, false);
       return;
     }
 
@@ -1104,6 +1402,8 @@ async function saveFinancialRecord() {
   } catch (err) {
     console.error(err);
     alert('Erro ao registrar transação.');
+  } finally {
+    setButtonBusy(submitBtn, false);
   }
 }
 
@@ -1121,6 +1421,8 @@ function editFinancialRecord(id) {
   document.getElementById('financialNotes').value = f.notes || '';
   const btn = document.querySelector("#financialrecordsSection button[onclick='saveFinancialRecord()']");
   btn.setAttribute('data-edit-id', id); btn.textContent='Atualizar Transação'; btn.style.background='#0ea5e9';
+  setFormEditMode('financialrecordsSection', true);
+  scrollToEditForm('financialrecordsSection', 'financialClinic');
 }
 
 async function deleteFinancialRecord(id) {
@@ -1134,104 +1436,37 @@ function clearFinancialForm() {
   document.getElementById('financialStatus').value = 'pendente';
   const btn = document.querySelector("#financialrecordsSection button[onclick='saveFinancialRecord()']");
   btn.removeAttribute('data-edit-id'); btn.textContent='Registrar Transação'; btn.style.background = '#059669';
+  setFormEditMode('financialrecordsSection', false);
 }
 
 function clearForm(section) {
   switch (section) {
     case 'clinic':
-      setFieldValue('clinicName', '');
-      setFieldValue('clinicCnpj', '');
-      setFieldValue('clinicEmail', '');
-      setFieldValue('clinicPhone', '');
-      setFieldValue('clinicAddress', '');
-      setFieldValue('clinicCity', '');
-      setFieldValue('clinicState', '');
-      setFieldValue('clinicZipCode', '');
-      setFieldValue('clinicOpeningTime', '08:00');
-      setFieldValue('clinicClosingTime', '20:00');
-      setFieldValue('clinicWorkDays', 'seg-sex');
-      setFieldValue('clinicAppointmentInterval', '30');
+      clearClinicForm();
       break;
     case 'tutor':
-      setFieldValue('tutorClinic', '');
-      setFieldValue('tutorName', '');
-      setFieldValue('tutorCpf', '');
-      setFieldValue('tutorEmail', '');
-      setFieldValue('tutorPhone', '');
-      setFieldValue('tutorSecondaryPhone', '');
+      clearTutorForm();
       break;
     case 'pet':
-      setFieldValue('petTutor', '');
-      setFieldValue('petName', '');
-      setFieldValue('petSpecies', '');
-      setFieldValue('petBreed', '');
-      setFieldValue('petStandardBreed', '');
-      setFieldValue('petBirthDate', '');
-      setFieldValue('petColor', '');
-      setFieldValue('petGender', '');
-      setFieldValue('petSize', '');
-      setFieldValue('petWeight', '');
-      setFieldValue('petNotes', '');
-      updateBreedOptions();
+      clearPetForm();
       break;
     case 'service':
-      setFieldValue('serviceName', '');
-      setFieldValue('serviceCategory', '');
-      setFieldValue('servicePrice', '');
-      setFieldValue('serviceDuration', '');
-      setFieldValue('serviceDescription', '');
+      clearServiceForm();
       break;
     case 'product':
-      setFieldValue('productClinic', '');
-      setFieldValue('productName', '');
-      setFieldValue('productCategory', '');
-      setFieldValue('productBrand', '');
-      setFieldValue('productQuantity', '');
-      setFieldValue('productMinStock', '');
-      setFieldValue('productAlertThreshold', '10');
-      setFieldValue('productPrice', '');
-      setFieldValue('productDescription', '');
+      clearProductForm();
       break;
     case 'employee':
-      setFieldValue('employeeClinic', '');
-      setFieldValue('employeeName', '');
-      setFieldValue('employeeEmail', '');
-      setFieldValue('employeeRole', '');
-      setFieldValue('employeePassword', '');
-      setFieldValue('employeePhone', '');
-      setFieldValue('employeeAdmissionDate', '');
-      setFieldValue('employeeIsActive', 'true');
+      clearEmployeeForm();
       break;
     case 'scheduling':
-      setFieldValue('schedulingClinic', '');
-      setFieldValue('schedulingTutor', '');
-      setFieldValue('schedulingPet', '');
-      setFieldValue('schedulingEmployee', '');
-      setFieldValue('schedulingService', '');
-      setFieldValue('schedulingDateTime', '');
-      setFieldValue('schedulingTotal', '');
-      setFieldValue('schedulingNotes', '');
-      setFieldValue('schedulingStatus', 'agendado');
+      clearSchedulingForm();
       break;
     case 'stock':
-      setFieldValue('stockClinic', '');
-      setFieldValue('stockProduct', '');
-      setFieldValue('stockMovementType', '');
-      setFieldValue('stockQuantity', '');
-      setFieldValue('stockDescription', '');
-      setFieldValue('stockEmployee', '');
-      setFieldValue('stockNotes', '');
+      clearStockForm();
       break;
     case 'financial':
-      setFieldValue('financialClinic', '');
-      setFieldValue('financialRecordType', '');
-      setFieldValue('financialCategory', '');
-      setFieldValue('financialAmount', '');
-      setFieldValue('financialDescription', '');
-      setFieldValue('financialDueDate', '');
-      setFieldValue('financialPaymentMethod', '');
-      setFieldValue('financialStatus', 'pendente');
-      setFieldValue('financialNotes', '');
+      clearFinancialForm();
       break;
   }
 }
@@ -1239,6 +1474,7 @@ function clearForm(section) {
 // Initialize UI on load
 window.addEventListener('load', async () => {
   applyTheme(localStorage.getItem("theme") || "light");
+  applyBestBrandImage();
 
   const mobileNavToggle = document.getElementById("mobileNavToggle");
   if (mobileNavToggle) {
@@ -1254,10 +1490,33 @@ window.addEventListener('load', async () => {
     }
   });
 
+  window.addEventListener('beforeunload', (event) => {
+    if (!editState.sectionId || !editState.dirty) return;
+    event.preventDefault();
+    event.returnValue = '';
+  });
+
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
+      if (cancelCurrentEditing()) {
+        event.preventDefault();
+        return;
+      }
       closeMobileNav();
     }
+  });
+
+  document.addEventListener('input', (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement)) return;
+    if (target.matches('[data-list-filter]')) return;
+    markEditDirtyForElement(target);
+  });
+
+  document.addEventListener('change', (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLSelectElement)) return;
+    markEditDirtyForElement(target);
   });
 
   // Delegação global para busca nas listas (evita perder listener ao re-renderizar)
@@ -1273,7 +1532,11 @@ window.addEventListener('load', async () => {
     const selectionStart = target.selectionStart ?? value.length;
     const selectionEnd = target.selectionEnd ?? value.length;
     const mainContent = document.querySelector(".main-content");
-    const previousScrollTop = mainContent ? mainContent.scrollTop : window.scrollY;
+    const canScrollMain =
+      mainContent instanceof HTMLElement &&
+      mainContent.scrollHeight > mainContent.clientHeight &&
+      getComputedStyle(mainContent).overflowY !== "visible";
+    const previousScrollTop = canScrollMain ? mainContent.scrollTop : window.scrollY;
 
     tableFilters[listKey] = value;
 
@@ -1284,7 +1547,7 @@ window.addEventListener('load', async () => {
     tableFilterTimers[listKey] = setTimeout(() => {
       renderSingleList(listKey);
 
-      if (mainContent) {
+      if (canScrollMain && mainContent instanceof HTMLElement) {
         mainContent.scrollTop = previousScrollTop;
       } else {
         window.scrollTo({ top: previousScrollTop });

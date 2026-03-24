@@ -42,3 +42,22 @@ Todos os `ModelViewSet` usam `AuthReadWritePermission`.
 
 ## Status
 As regras acima foram testadas no uso funcional do projeto e estão ativas.
+
+## Estratégia de banco de dados
+
+### Cenário atual
+- O projeto usa SQLite como banco principal.
+- Em ambiente local, os dados ficam no arquivo `db.sqlite3` da própria máquina.
+- Em deploy, o objetivo é concentrar o banco no servidor para que todos os clientes consumam os mesmos dados via API.
+
+### Decisão de design
+- A escolha por SQLite nesta fase prioriza simplicidade de setup, custo e velocidade de entrega.
+- A consistência entre dispositivos não é feita por replicação de arquivo local, e sim por acesso ao mesmo backend publicado.
+
+### Consequências esperadas
+- Dados não sincronizam automaticamente entre dois backends distintos (ex.: localhost e produção).
+- Migrações devem ser aplicadas no ambiente onde a API está rodando.
+- Backup operacional é baseado em cópia do arquivo do banco no servidor.
+
+### Próximo passo arquitetural
+- Caso o sistema aumente concorrência e volume transacional, a evolução prevista é PostgreSQL.
