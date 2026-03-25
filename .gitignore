@@ -25,6 +25,17 @@ media/
 .vscode/
 .idea/
 
+# Mobile / Expo / React Native
+mobile/node_modules/
+mobile/.expo/
+mobile/dist/
+mobile/build/
+mobile/web-build/
+mobile/.metro-health-check*
+mobile/expo-env.d.ts
+mobile/android/
+mobile/ios/
+
 # OS / logs / secrets
 *.log
 Thumbs.db

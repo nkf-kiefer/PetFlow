@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "PetFlow",
+    "slug": "petflow-mobile",
+    "version": "1.0.0",
+    "sdkVersion": "54.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#0b1227"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0b1227"
+      },
+      "package": "com.petflow.mobile"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.petflow.mobile"
+    },
+    "newArchEnabled": true,
+    "plugins": [
+      "expo-asset"
+    ]
+  }
+}
