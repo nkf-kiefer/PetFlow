@@ -1,111 +1,108 @@
 # PetFlow Mobile
 
-App React Native (Expo) para o sistema de gestão veterinária PetFlow.
+Aplicativo mobile do PetFlow feito com React Native + Expo.
 
-## Stack
+A ideia aqui foi levar as mesmas rotinas do sistema web para o celular, mantendo a API Django como backend único.
 
-- **React Native** com Expo SDK 52
-- **React Navigation** v6 (Stack + Bottom Tabs)
-- **Axios** com interceptor JWT automático
-- **AsyncStorage** para persistência do token
+## O que já está implementado
 
-## Pré-requisitos
+- autenticação com JWT
+- dashboard inicial
+- CRUD de clínicas, tutores, pets, funcionários, serviços e produtos
+- agendamentos com validações básicas e filtros por clínica
+- estoque (movimentações)
+- financeiro (registros de receita/despesa)
+
+## Stack usada
+
+- React Native com Expo
+- React Navigation (tabs + stacks)
+- Axios para chamadas da API
+- AsyncStorage para persistência de sessão
+
+## Requisitos
 
 - Node.js 18+
-- Expo CLI: `npm install -g expo-cli`
-- Android Studio (para emulador Android) ou Xcode (para iOS)
-- ou o app **Expo Go** no celular
+- npm
+- Expo Go no celular ou emulador Android/iOS
 
-## Instalação
+## Como rodar local
 
 ```bash
 cd mobile
 npm install
+npm start
 ```
 
-## Rodando
+Depois do `npm start`, é só abrir no Expo Go (QR code) ou iniciar emulador.
+
+Comandos úteis:
 
 ```bash
-# Abre o menu Expo (QR code para Expo Go no celular)
-npm start
-
-# Apenas Android
 npm run android
-
-# Apenas iOS (macOS)
 npm run ios
 ```
 
-## Estrutura
+## Estrutura do projeto
 
-```
+```text
 mobile/
-├── App.js                          # Entry point + NavigationContainer
-├── app.json                        # Configuração Expo
-├── package.json
-├── src/
-│   ├── api/
-│   │   ├── client.js               # Axios + interceptor JWT refresh
-│   │   └── resources.js            # CRUD de todos os recursos da API
-│   ├── context/
-│   │   └── AuthContext.js          # Login, logout, token persistido
-│   ├── navigation/
-│   │   └── AppTabs.js              # Bottom tabs + stacks por módulo
-│   ├── components/
-│   │   ├── AppButton.js            # Botão primário / danger / ghost
-│   │   ├── AppInput.js             # TextInput com label e erro
-│   │   ├── AppPicker.js            # Picker modal customizado
-│   │   ├── ListItemCard.js         # Card clicável para listas
-│   │   └── EmptyState.js           # Estado vazio das listas
-│   ├── screens/
-│   │   ├── LoginScreen.js
-│   │   ├── DashboardScreen.js      # Cards de resumo
-│   │   ├── MoreScreen.js           # Menu de módulos
-│   │   ├── clinics/
-│   │   ├── tutors/
-│   │   ├── pets/
-│   │   ├── employees/
-│   │   ├── services/
-│   │   ├── products/
-│   │   ├── schedulings/
-│   │   ├── stock/
-│   │   └── financial/
-│   └── theme/
-│       └── index.js                # Cores, espaçamento, tipografia
+├─ App.js
+├─ app.json
+├─ babel.config.js
+├─ package.json
+└─ src/
+    ├─ api/
+    │  ├─ client.js
+    │  └─ resources.js
+    ├─ components/
+    ├─ context/
+    ├─ navigation/
+    ├─ screens/
+    │  ├─ clinics/
+    │  ├─ tutors/
+    │  ├─ pets/
+    │  ├─ employees/
+    │  ├─ services/
+    │  ├─ products/
+    │  ├─ schedulings/
+    │  ├─ stock/
+    │  └─ financial/
+    ├─ theme/
+    └─ utils/
 ```
 
-## Navegação
+## Navegação atual
 
-```
-Bottom Tabs
-├── Início     → Dashboard (cards de resumo + logout)
-├── Agenda     → Agendamentos (lista + form CRUD)
-├── Pets/Tutores → Tutores + Pets (lista + form CRUD)
-└── Mais       → Menu
-                 ├── Clínicas
-                 ├── Funcionários
-                 ├── Serviços
-                 ├── Produtos
-                 ├── Estoque (movimentações)
-                 └── Financeiro (receitas e despesas)
-```
+- Início: resumo e atalhos
+- Agenda: listagem e cadastro de agendamentos
+- Tutores e Pets: gestão de cadastro
+- Mais: acesso aos demais módulos administrativos
 
-## Gerar APK (Android)
+## API e ambiente
+
+Hoje o app está apontando para:
+
+`https://Nataliakiefer.pythonanywhere.com/api`
+
+Se quiser rodar com API local, ajuste `API_BASE` em `src/api/client.js`.
+
+## Build Android (APK)
 
 ```bash
-# Instale o EAS CLI
 npm install -g eas-cli
-
-# Login na conta Expo
 eas login
-
-# Build APK para teste
 eas build -p android --profile preview
 ```
 
-## API
+## Observações de desenvolvimento
 
-O app consome a API em produção:  
-`https://Nataliakiefer.pythonanywhere.com/api`
+- este app está no mesmo repositório do backend por escolha de organização
+- `node_modules` e `.expo` não devem ser versionados
+- antes de commit, conferir sempre com `git status` e `git diff --staged`
 
-Para apontar para ambiente local, altere `API_BASE` em `src/api/client.js`.
+## Próximos ajustes planejados
+
+- melhorar experiência de agenda (regras de horário e conflitos)
+- evoluir feedback de erro para cenários offline
+- separar melhor configurações por ambiente (dev/homolog/prod)
