@@ -81,11 +81,17 @@ mobile/
 
 ## API e ambiente
 
-Hoje o app está apontando para:
+O app usa a variável `EXPO_PUBLIC_API_BASE` (quando definida).
 
-`https://Nataliakiefer.pythonanywhere.com/api`
+Sem essa variável, o fallback é:
 
-Se quiser rodar com API local, ajuste `API_BASE` em `src/api/client.js`.
+`http://127.0.0.1:8000/api`
+
+Para apontar para outro host local/rede, rode com:
+
+```bash
+EXPO_PUBLIC_API_BASE=http://SEU_IP:8000/api npm start
+```
 
 ## Build Android (APK)
 
@@ -105,4 +111,4 @@ eas build -p android --profile preview
 
 - melhorar experiência de agenda (regras de horário e conflitos)
 - evoluir feedback de erro para cenários offline
-- separar melhor configurações por ambiente (dev/homolog/prod)
+- ampliar suporte a configuração de API por dispositivo/rede local

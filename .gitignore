@@ -47,7 +47,7 @@ Thumbs.db
 id_rsa
 id_ed25519
 
-# PythonAnywhere artifacts
+# Hosting artifacts
 *.pyc
 *.pid
 *.sock

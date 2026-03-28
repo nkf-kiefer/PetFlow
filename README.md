@@ -24,9 +24,9 @@ API REST para clínica veterinária (cadastro, agenda, estoque e financeiro).
 
 
 ### Decisão de arquitetura adotada
-- Para simplificar operação e custo inicial, o backend foi pensado com banco centralizado no servidor de deploy.
-- No plano atual, o servidor mantém um único SQLite para todos os usuários do sistema.
-- O frontend (qualquer dispositivo) deve apontar para a mesma `API_BASE` publicada.
+- O projeto está configurado para uso local e estudo, sem alvo de hospedagem.
+- O backend roda localmente e o frontend/mobile devem apontar para a API local.
+- O banco permanece local no `db.sqlite3`.
 
 
 ## Rodando localmente (Windows / PowerShell)
@@ -75,11 +75,10 @@ Content-Type: application/json
 
 ## Ambiente e segurança
 - use [.env.example](.env.example) como base
-- em produção:
-  - `DEBUG=False`
-  - `SECRET_KEY` forte
-  - `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS` e `CORS_ALLOWED_ORIGINS` configurados
-  - banco conforme necessidade (SQLite para cenário simples; PostgreSQL recomendado em produção)
+- para ambiente local:
+  - `DEBUG=True`
+  - `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS` e `CORS_ALLOWED_ORIGINS` com localhost/127.0.0.1
+  - banco SQLite local
 
 ## Documentação útil
 - Regras do sistema: [docs/logica-de-negocio.md](docs/logica-de-negocio.md)
